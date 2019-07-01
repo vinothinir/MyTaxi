@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -28,7 +29,16 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.gson.JsonObject;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,16 +71,51 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
+    JSONObject jsonObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_login );
+
+        //Read from assets and convert JSON to POJO
+        final JSONArray jsonArray = readFromAssets();
+
+
+        Button button = findViewById( R.id.get_last_name );
+        button.setOnClickListener( new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                for (int j = 0; j < jsonArray.length(); j++) {
+                    try {
+                        jsonObject = jsonArray.getJSONObject( j );
+                        String name = jsonObject.getString( "name" );
+                        for(int i = 0; i < jsonObject.names().length(); i++) {
+                            if (jsonObject.names().getString( i ).equalsIgnoreCase( "name" )) {
+                               // Log.v( "TAG", "key = " + jsonObject.names().getString( i ) + " value = " + jsonObject.get( jsonObject.names().getString( i ) ) );
+                                Object myObj = jsonObject.get( jsonObject.names().getString( i ) );
+                                String last = myObj.toString();
+                                Log.e( "TAG", "Value is" + last + "..."+"\n" + last.substring(last.lastIndexOf(",") +1));
+                                //showToast( Integer.parseInt( last.substring(last.lastIndexOf(",") + 1) ) );
+
+                            }
+                        }
+
+                        //int i = Integer.parseInt( last );
+                        //showToast(i);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } );
+
         // Set up the login form.
-        mEmailView = (AutoCompleteTextView) findViewById( R.id.email );
+        mEmailView = (AutoCompleteTextView) findViewById( R.id.user_name );
         populateAutoComplete();
 
-        mPasswordView = (EditText) findViewById( R.id.password );
+        mPasswordView = (EditText) findViewById( R.id.Password );
         mPasswordView.setOnEditorActionListener( new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
@@ -92,6 +137,32 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById( R.id.login_form );
         mProgressView = findViewById( R.id.login_progress );
+    }
+
+    private void showToast(int i) {
+        Toast.makeText( this, i, Toast.LENGTH_LONG ).show();
+    }
+
+    private JSONArray readFromAssets() {
+        String json = null;
+        try {
+            InputStream inputStream = getAssets().open( "results.json" );
+            int size = inputStream.available();
+            byte[] buffer = new byte[size];
+            inputStream.read( buffer );
+            inputStream.close();
+            json = new String( buffer, "UTF-8" );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            JSONObject jsonObject = new JSONObject( json );
+            return jsonObject.getJSONArray( "results" );
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void populateAutoComplete() {
