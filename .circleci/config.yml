@@ -1,4 +1,13 @@
 version: 2
+ jobs:
+   build:
+     docker:
+       - image: circleci/ruby:2.4.1
+       jobs:
+          - vinothinir/MyTaxi
+     steps:
+       - checkout
+       - run: echo "A first hello"
 jobs:
   build:
     working_directory: ~/MyTaxi
@@ -10,13 +19,12 @@ jobs:
       - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-     - run:
-       name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-      command: sudo chmod +x ./gradlew
-
-     - run:
-         name: Download Dependencies
-         command: ./gradlew androidDependencies
+      - run:
+         name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+         command: sudo chmod +x ./gradlew
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
       - save_cache:
           paths:
             - ~/.gradle
